@@ -1,4 +1,5 @@
 #include "list.h"
+#include <algorithm> // Used only to covert all strings to lower-case
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -41,7 +42,12 @@ void * SpellCheckerThread(void * arg)
 
         for (int i = 0; i < CHUNK_SIZE; ++i)
         {
-            if (!dictWords.Contains(word[i]))
+            // Change to lower case, remove punctuation etc.
+            std::string canonicalWord;
+            transform(word[i].begin(), word[i].end(), back_inserter(canonicalWord), ::tolower);
+            // TODO
+
+            if (!dictWords.Contains(canonicalWord))
             {
                 misspeltWords.AppendIfUnique(word[i]);
             }
@@ -94,6 +100,9 @@ int main()
     JoinSpellCheckerThreads(NUM_THREADS, threads);
 
     cout << misspeltWords << endl;
+
+    ofstream output("MISSPELT_WORDS");
+    output << misspeltWords;
 
     pthread_mutex_destroy(&inputMutex);
     return 0;
