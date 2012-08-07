@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <sys/time.h>
 
 
 // Anonymous namespace limits the scope of variables to the file (like static)
@@ -22,7 +23,7 @@ struct ThreadArgs
 void * SpellCheckerThread(void * arg)
 {
     // ThreadArgs threadArgs = *static_cast<ThreadArgs *>( arg );
-    const int CHUNK_SIZE = 20;
+    const int CHUNK_SIZE = 15;
     std::string word[CHUNK_SIZE];
 
     while (true)
@@ -96,10 +97,17 @@ int main()
     ThreadArgs threadArgs[NUM_THREADS];
     pthread_mutex_init(&inputMutex, 0L);
 
+    timespec begin;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &begin);
+
     SpawnSpellCheckerThreads(NUM_THREADS, threads, threadArgs);
     JoinSpellCheckerThreads(NUM_THREADS, threads);
 
-    cout << misspeltWords << endl;
+    timespec end;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+
+    cout << "Using " << NUM_THREADS << " thread(s)." << endl;
+    cout << "Total time: " << end.tv_nsec - begin.tv_nsec << " ns" << endl;
 
     ofstream output("MISSPELT_WORDS");
     output << misspeltWords;
