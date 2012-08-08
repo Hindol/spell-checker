@@ -18,16 +18,24 @@ std::ostream & operator <<(std::ostream &os, const WordList &wordList)
 }
 
 
-/**
- * Note: http://stackoverflow.com/questions/11652748/locking-shared-resources-in-constructor-and-destructor
- */
 WordList::WordList()
     : head(0L), tail(0L)
 {
-    pthread_rwlock_init(&rwlock, NULL);
+    // Note: http://stackoverflow.com/questions/2190090/\
+    //  how-to-prevent-writer-starvation-in-a-read-write-lock-in-pthreads
+    pthread_rwlockattr_t rwattr;
+
+    // Commenting this out gives better timings, so...
+    // pthread_rwlockattr_setkind_np(&rwattr, PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP);
+
+    pthread_rwlock_init(&rwlock, &rwattr);
 }
 
 
+/**
+ * Note: http://stackoverflow.com/questions/11652748/\
+ *  locking-shared-resources-in-constructor-and-destructor
+ */
 WordList::~WordList()
 {
     while (head != 0L)

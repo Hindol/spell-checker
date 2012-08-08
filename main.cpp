@@ -23,7 +23,7 @@ struct ThreadArgs
 void * SpellCheckerThread(void * arg)
 {
     // ThreadArgs threadArgs = *static_cast<ThreadArgs *>( arg );
-    const int CHUNK_SIZE = 15;
+    const int CHUNK_SIZE = 25;
     std::string word[CHUNK_SIZE];
 
     while (true)
