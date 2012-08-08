@@ -75,6 +75,20 @@ void JoinSpellCheckerThreads(const int &NUM_THREADS, pthread_t threads[])
     }
 }
 
+timespec timediff(const timespec &begin, const timespec &end)
+{
+    timespec diff;
+    if ((end.tv_nsec - begin.tv_nsec) < 0)
+    {
+        diff.tv_sec = end.tv_sec - begin.tv_sec - 1;
+        diff.tv_nsec = 1000000000 + end.tv_nsec - begin.tv_nsec;
+    } else {
+        diff.tv_sec = end.tv_sec - begin.tv_sec;
+        diff.tv_nsec = end.tv_nsec - begin.tv_nsec;
+    }
+    return diff;
+}
+
 }
 
 
@@ -84,6 +98,9 @@ int main()
 
     // How many worker threads?
     const int NUM_THREADS = 4;
+
+    timespec begin;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &begin);
 
     // Read list of correctly spelt words
     string word;
@@ -97,20 +114,18 @@ int main()
     ThreadArgs threadArgs[NUM_THREADS];
     pthread_mutex_init(&inputMutex, 0L);
 
-    timespec begin;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &begin);
-
     SpawnSpellCheckerThreads(NUM_THREADS, threads, threadArgs);
     JoinSpellCheckerThreads(NUM_THREADS, threads);
 
     timespec end;
     clock_gettime(CLOCK_MONOTONIC_RAW, &end);
 
-    cout << "Using " << NUM_THREADS << " thread(s)." << endl;
-    cout << "Total time: " << end.tv_nsec - begin.tv_nsec << " ns" << endl;
-
     ofstream output("MISSPELT_WORDS");
     output << misspeltWords;
+
+    cout << "Using " << NUM_THREADS << " thread(s)." << endl;
+    cout << "Total time: " << timediff(begin, end).tv_sec << "." <<
+            timediff(begin, end).tv_nsec / 10000000 << " s" << endl;
 
     pthread_mutex_destroy(&inputMutex);
     return 0;
