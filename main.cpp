@@ -2,6 +2,7 @@
 #include <algorithm> // Used only to covert all strings to lower-case
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <sys/time.h>
 
@@ -20,9 +21,10 @@ struct ThreadArgs
     int id;
 };
 
-void * SpellCheckerThread(void * arg)
+void * SpellCheck(void * arg)
 {
-    // ThreadArgs threadArgs = *static_cast<ThreadArgs *>( arg );
+    ThreadArgs threadArgs = *static_cast<ThreadArgs *>( arg );
+    const std::string ID = static_cast<std::ostringstream*>( &(std::ostringstream() << threadArgs.id) )->str();
     const int CHUNK_SIZE = 25;
     std::string word[CHUNK_SIZE];
 
@@ -46,7 +48,7 @@ void * SpellCheckerThread(void * arg)
             // Change to lower case, remove punctuation etc.
             std::string canonicalWord;
             transform(word[i].begin(), word[i].end(), back_inserter(canonicalWord), ::tolower);
-            // TODO
+            // TODO: Remove punctuation
 
             if (!dictWords.Contains(canonicalWord))
             {
@@ -58,16 +60,16 @@ void * SpellCheckerThread(void * arg)
     return 0L;
 }
 
-void SpawnSpellCheckerThreads(const int &NUM_THREADS, pthread_t threads[], ThreadArgs threadArgs[])
+void SpawnSpellCheckerThreads(const int NUM_THREADS, pthread_t threads[], ThreadArgs threadArgs[])
 {
     for (int i = 0; i < NUM_THREADS; ++i)
     {
         threadArgs[i].id = i;
-        pthread_create(&threads[i], NULL, SpellCheckerThread, static_cast<void *>(&threadArgs[i]));
+        pthread_create(&threads[i], NULL, SpellCheck, static_cast<void *>(&threadArgs[i]));
     }
 }
 
-void JoinSpellCheckerThreads(const int &NUM_THREADS, pthread_t threads[])
+void JoinSpellCheckerThreads(const int NUM_THREADS, pthread_t threads[])
 {
     for (int i = 0; i < NUM_THREADS; ++i)
     {
@@ -114,18 +116,23 @@ int main()
     ThreadArgs threadArgs[NUM_THREADS];
     pthread_mutex_init(&inputMutex, 0L);
 
-    SpawnSpellCheckerThreads(NUM_THREADS, threads, threadArgs);
-    JoinSpellCheckerThreads(NUM_THREADS, threads);
+    SpawnSpellCheckerThreads(NUM_THREADS - 1, threads, threadArgs);
 
-    timespec end;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+    // Main thread also takes part in spell-checking
+    threadArgs[NUM_THREADS - 1].id = NUM_THREADS - 1;
+    SpellCheck(&threadArgs[NUM_THREADS - 1]);
+
+    JoinSpellCheckerThreads(NUM_THREADS - 1, threads);
 
     ofstream output("MISSPELT_WORDS");
     output << misspeltWords;
 
+    timespec end;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+
     cout << "Using " << NUM_THREADS << " thread(s)." << endl;
-    cout << "Total time: " << timediff(begin, end).tv_sec << "." <<
-            timediff(begin, end).tv_nsec / 10000000 << " s" << endl;
+    cout << "Total time: " << timediff(begin, end).tv_sec << " s " <<
+            timediff(begin, end).tv_nsec << " ns" << endl;
 
     pthread_mutex_destroy(&inputMutex);
     return 0;

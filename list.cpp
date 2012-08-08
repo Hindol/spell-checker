@@ -26,7 +26,7 @@ WordList::WordList()
     pthread_rwlockattr_t rwattr;
 
     // Commenting this out gives better timings, so...
-    // pthread_rwlockattr_setkind_np(&rwattr, PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP);
+//    pthread_rwlockattr_setkind_np(&rwattr, PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP);
 
     pthread_rwlock_init(&rwlock, &rwattr);
 }
